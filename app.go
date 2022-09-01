@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/mackerelio/mackerel-client-go"
-	"golang.org/x/sync/errgroup"
 )
 
 type MetricsSource interface {
@@ -57,25 +56,17 @@ func (app App) Run(ctx context.Context) error {
 		log.Printf("[INFO] running as dryrun mode")
 	}
 
-	eg := new(errgroup.Group)
-
 	for _, target := range app.targets {
-		target := target // for goroutine
+		log.Printf("[DEBUG] processing %s", target)
 
-		eg.Go(func() error {
-			log.Printf("[DEBUG] processing %s", target)
+		values, err := target.FetchMetrics(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to fetch metrics for %s: %w", target, err)
+		}
 
-			values, err := target.FetchMetrics(ctx)
-			if err != nil {
-				return fmt.Errorf("failed to fetch metrics for %s: %w", target, err)
-			}
-
-			return app.ThrowMetricValues(ctx, values)
-		})
-	}
-
-	if err := eg.Wait(); err != nil {
-		return fmt.Errorf("failed to throw metrics: %w", err)
+		if err := app.ThrowMetricValues(ctx, values); err != nil {
+			return fmt.Errorf("failed to throw metric values: %w", err)
+		}
 	}
 
 	return nil
@@ -86,7 +77,7 @@ func (app App) ThrowMetricValues(ctx context.Context, values []*MetricValue) err
 
 	for _, v := range values {
 		mkrValues = append(mkrValues, &mackerel.MetricValue{
-			Name:  app.mkrMetricPrefix + "." + v.Label,
+			Name:  fmt.Sprintf("%s.%s", app.mkrMetricPrefix, v.Label),
 			Time:  v.Time,
 			Value: v.Value,
 		})
