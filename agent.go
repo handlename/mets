@@ -21,7 +21,7 @@ type MetricValue struct {
 
 type Agent struct {
 	dryrun  bool
-	targets []MetricsSource
+	sources []MetricsSource
 
 	mkrlClient      *mackerel.Client
 	mkrService      string
@@ -46,8 +46,8 @@ func NewAgent(config AgentConfig) Agent {
 	}
 }
 
-func (app *Agent) RegisterTarget(target MetricsSource) error {
-	app.targets = append(app.targets, target)
+func (app *Agent) RegisterMetricSource(target MetricsSource) error {
+	app.sources = append(app.sources, target)
 	return nil
 }
 
@@ -56,7 +56,7 @@ func (app Agent) Run(ctx context.Context) error {
 		log.Printf("[INFO] running as dryrun mode")
 	}
 
-	for _, target := range app.targets {
+	for _, target := range app.sources {
 		log.Printf("[DEBUG] processing %s", target)
 
 		values, err := target.FetchMetrics(ctx)
