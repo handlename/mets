@@ -19,7 +19,7 @@ type MetricValue struct {
 	Value interface{}
 }
 
-type App struct {
+type Agent struct {
 	dryrun  bool
 	targets []MetricsSource
 
@@ -28,7 +28,7 @@ type App struct {
 	mkrMetricPrefix string
 }
 
-type AppConfig struct {
+type AgentConfig struct {
 	Dryrun bool
 
 	MackerelAPIKey       string
@@ -36,8 +36,8 @@ type AppConfig struct {
 	MackerelMetricPrefix string
 }
 
-func New(config AppConfig) App {
-	return App{
+func NewAgent(config AgentConfig) Agent {
+	return Agent{
 		dryrun: config.Dryrun,
 
 		mkrlClient:      mackerel.NewClient(config.MackerelAPIKey),
@@ -46,12 +46,12 @@ func New(config AppConfig) App {
 	}
 }
 
-func (app *App) RegisterTarget(target MetricsSource) error {
+func (app *Agent) RegisterTarget(target MetricsSource) error {
 	app.targets = append(app.targets, target)
 	return nil
 }
 
-func (app App) Run(ctx context.Context) error {
+func (app Agent) Run(ctx context.Context) error {
 	if app.dryrun {
 		log.Printf("[INFO] running as dryrun mode")
 	}
@@ -72,7 +72,7 @@ func (app App) Run(ctx context.Context) error {
 	return nil
 }
 
-func (app App) ThrowMetricValues(ctx context.Context, values []*MetricValue) error {
+func (app Agent) ThrowMetricValues(ctx context.Context, values []*MetricValue) error {
 	mkrValues := []*mackerel.MetricValue{}
 
 	for _, v := range values {
